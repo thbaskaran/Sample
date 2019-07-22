@@ -1,195 +1,81 @@
-function getServiceCall(url) {
-    return $.ajax
-     ({
-         url: url,
-         type: "GET",
-         headers:
-         {
-             "Accept": "application/json;odata=verbose",
-             "Content-Type": "application/json;odata=verbose",
-            }
-     });
-};
-function getServiceCallForConfiguration(url) {
-    return $.ajax
-        ({
-            url: url,
-            type: "GET",
-            headers:
-            {
-                "Accept": "application/json;odata=verbose",
-                "Content-Type": "application/json;odata=verbose",
-            },async: false
-        });
-};
-
-function getQueryStringParameter(paramToRetrieve) {
-    var params = document.URL.split("?")[1].split("&");
-    for (var i = 0; i < params.length; i = i + 1) {
-        var singleParam = params[i].split("=");
-        if (singleParam[0] == paramToRetrieve) return singleParam[1];
-    }
-};
-
- function getFormDigest(siteUrl){
-    return $.ajax({
-        url: siteUrl + "/_api/contextinfo",
-        method: "POST",
-        headers: {
-            "Accept": "application/json; odata=verbose"
+class DeparmentHomeCarousel extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            departmentCarouselImages: []
         }
-    });
-};
-function PostServiceCall(appweburl, url, metadata) {
-    var formDigest = ""; 
-    return getFormDigest(appweburl).then(function (data) {
-        formDigest = data.d.GetContextWebInformation.FormDigestValue;
-        return $.ajax
-            ({
-                url:url,
-                type: "POST",
-                data: JSON.stringify(metadata),
-                headers:
-                {
-                    "Accept": "application/json;odata=verbose",
-                    "Content-Type": "application/json;odata=verbose",
-                    "X-HTTP-Method": "POST",
-                    "X-RequestDigest": formDigest,
-                    
-                }, async: true
-            });
-    });
-};
-function UpdateServiceCall(appweburl, url, metadata) {
-    var formDigest = "";
-    return getFormDigest(appweburl).then(function (data) {
-        formDigest = data.d.GetContextWebInformation.FormDigestValue;
-    return $.ajax
-        ({
-            url: url,
-            type: "POST",
-            data: JSON.stringify(metadata),
-            headers: {
-                "Accept": "application/json; odata=verbose",
-                "Content-Type": "application/json;odata=verbose",
-                "X-HTTP-Method": "MERGE",
-                "IF-MATCH": "*",
-                "X-RequestDigest": formDigest
-            }
-            });
-    });
-};
-function DeleteServiceCall(appweburl, url, metadata) {
-    var formDigest = "";
-    return getFormDigest(appweburl).then(function (data) {
-        formDigest = data.d.GetContextWebInformation.FormDigestValue;
-        return $.ajax
-            ({
-                url: url,
-                type: "Delete",
-                data: JSON.stringify(metadata),
-                headers: {
-                    "Accept": "application/json;odata=verbose",
-                    "Content-Type": "application/json;odata=verbose",
-                    "X-Http-Method": "DELETE",
-                    "X-RequestDigest": formDigest,
-                    "If-Match": "*"
-                }
-            });
-    });
-}       
-function Logerror(pageName, module, methodName, errorMessage) {
-    var appurl = decodeURIComponent(getQueryStringParameter('SPAppWebUrl'));
-    appurl = appurl.substring(0, appurl.lastIndexOf('/'));
-    var username = GetCurrentUserDetails(appurl);
-    var itemType = GetItemTypeForListName(constants.errorloglistname);
-    var items = {
-        "__metadata": { "type": itemType },
-        "LoggedUser": username,
-        "PageName": pageName,
-        "Module": module,
-        "MethodName": methodName,
-        "ErrorMessage": errorMessage
     }
-    var logPostUrl = appurl + "/_api/web/lists/getbytitle('" + constants.errorloglistname + "')/items"
-    PostServiceCall(appurl, logPostUrl, items)
-}
-function DepartmentLogerror(pageName, module, methodName, errorMessage) {
-    var appurl = decodeURIComponent(getQueryStringParameter('SPAppWebUrl'));
-    appurl = appurl.substring(0, appurl.lastIndexOf('/'));
-    var username = GetCurrentUserDetails(appurl);
-    var itemType = GetItemTypeForListName(constants.errorloglistname);
-    var items = {
-        "__metadata": { "type": itemType },
-        "LoggedUser": username,
-        "PageName": pageName,
-        "Module": module,
-        "MethodName": methodName,
-        "ErrorMessage": errorMessage
-    }
-    getParentWebUrl(appurl).then(data => {
-        var rootUrl = data.d.Url;
-        var logPostUrl = rootUrl + "/_api/web/lists/getbytitle('" + constants.configListName + "')/items"
-        PostServiceCall(appurl, logPostUrl, items) 
-        }, error => {
-            errorMessage = error.responseJSON.error.message;
-            DepartmentLogerror('service-call', 'ParentUrl', 'DepartmentLogerror', errorMessage)
-        });
-   
-   
-}
-function GetItemTypeForListName(name) {
-    return "SP.Data." + name.charAt(0).toUpperCase() + name.split(" ").join("").slice(1) + "ListItem";
-}
-
-function GetCurrentUserDetails(appurl) {
-    var Email;
-
-    $.ajax({
-        url: appurl + "/_api/web/currentuser",
-        headers: {
-            Accept: "application/json;odata=verbose"
-        },
-        async: false,
-        success: function (data) {
-            Email = data.d.Email;
-        },
-        eror: function (data) {
-            alert("An error occurred. Please try again.");
+    componentDidMount() {
+        var errorMessage = '';
+        var appweburl = decodeURIComponent(getQueryStringParameter('SPAppWebUrl'));
+        appweburl = appweburl.substring(0, appweburl.lastIndexOf('/'));
+        var today = new Date();
+        var dd = today.getDate();
+        var mm = today.getMonth() + 1; //January is 0
+        var yyyy = today.getFullYear();
+        if (dd < 10) {
+            dd = '0' + dd;
         }
-    });
-    return Email;
-}
-
-//function HtmlToText(html) {
-//    var temporalDivElement = document.createElement("div");
-//    temporalDivElement.innerHTML = html;
-//    return temporalDivElement.textContent || temporalDivElement.innerText || "";
-//}
-function getParentWebUrl(url) {
-    return $.ajax(
-        {
-            url: url + "/_api/Site/RootWeb",
-            method: "GET",
-            headers:
-            {
-                "Accept": "application/json; odata=verbose"
-            }, async: false
+        if (mm < 10) {
+            mm = '0' + mm;
+        }
+        var today = yyyy + '-' + mm + '-' + dd;
+        today = today + 'T00%3a00%3a00';
+        var departmentquery = "'?$select=File,ImageDescription,ID,ImgUrl,ContentType0,ImageTitle,NavigateURLType,StartDate,ExpiryDate&$filter=((datetime'" + today + "' ge StartDate)and( datetime'" + today + "' le ExpiryDate)) and (IsActive eq 1)&$orderby=Modified desc &$expand=File'";
+        var getUrl = appweburl + "/_api/web/lists/GetByTitle('" + constants.departmentCarouselListName + "')/items" + departmentquery;
+        var departmentNameUrl = appweburl + "/_api/web/title"
+        getServiceCall(getUrl).then(data => {
+            this.setState({
+                departmentCarouselImages: data.d.results
+            })
+            sliderScript();
+        },error => {
+           errorMessage = error.responseJSON.error.message;
+            DepartmentLogerror('DeparmentHomeCarousel', 'CarouselImages', 'getServiceCall-OnpageLoad', errorMessage)
         })
-};
-function outlookPostServiceCall(UserToken,eventObject) {
-   return $.ajax({
-        type: 'POST',
-        url: 'https://graph.microsoft.com/v1.0/me/events',
-        data: JSON.stringify(eventObject),
-        contentType: "application/json",
-        async: false,
-        headers: {
-            'Accept': 'application/json',
-            'Authorization': 'Bearer ' + UserToken,
-       }, async: true
-    })
-}
-function isMobileDevice() {
-    return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1);
-};
+        getServiceCall(departmentNameUrl).then(data => {
+            document.getElementById('departmentTile').innerHTML =data.d.Title;
+
+        },error => {
+            errorMessage = error.responseJSON.error.message;
+            DepartmentLogerror('DeparmentHomeCarousel', 'DepartmentName', 'getServiceCall-OnpageLoad', errorMessage)
+        })
+    }
+    imageRedirect = (imgUrl, RedirectionType, ID) => {
+        event.preventDefault();
+        if (RedirectionType == 'External') {
+            window.open(imgUrl, '_blank');
+        }
+        if (RedirectionType == 'Internal') {
+            window.open(DepReadMoreUrl + ID, '_parent');
+        }
+    }
+    render() {
+        return (
+            <div className="demo">
+                <ul id="lightSlider" className="light">
+                    { this.state.departmentCarouselImages.map((individualbannerimage) =>
+                        <li key={individualbannerimage.ID} data-src={individualbannerimage.ContentType0} data-thumb={individualbannerimage.ContentType0 == 'Image' ? individualbannerimage.File.ServerRelativeUrl : (individualbannerimage.ContentType0 == 'Video' ? individualbannerimage.File.ServerRelativeUrl : (individualbannerimage.ContentType0 == 'Text' ? individualbannerimage.ImageTitle : null))}>
+                            {individualbannerimage.ContentType0 == 'Image'
+                                ? <img onClick={() => this.imageRedirect(individualbannerimage.ImageUrl, individualbannerimage.NavigateURLType, individualbannerimage.ID)} src={individualbannerimage.File.ServerRelativeUrl} />
+                                : (individualbannerimage.ContentType0 == 'Video'
+                                    ? <video width="100%" height="350px" controls src={individualbannerimage.File.ServerRelativeUrl}>
+                                           Your browser does not support HTML5 video.</video>
+                                    : (individualbannerimage.ContentType0 == 'Text'
+                                        ? <p className="bannertext-mobileview" dangerouslySetInnerHTML={{ __html: individualbannerimage.ImageDescription }}></p>
+                                        : null
+                                    )
+                                )
+                            } 
+                             <div className="banner-parentdiv">
+                                <p className="banner-childtext">{individualbannerimage.ImageTitle} <span><a onClick={() => this.imageRedirect(individualbannerimage.ImageUrl, individualbannerimage.NavigateURLType, individualbannerimage.ID)} className="banner_readmore">Read More</a></span></p>
+                              </div>
+                         </li>
+                    )}
+                  </ul>
+               </div>
+             
+             )
+         }
+     }
+ReactDOM.render(<DeparmentHomeCarousel />, document.getElementById('DepartmentHomeCarousel'));
